@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Currency Converter API - Demo</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #1f2937, #111827);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; color: #111827; }
+  p.sub { margin: 0 0 24px; color: #6b7280; font-size: 13px; }
+  label { font-size: 13px; color: #374151; font-weight: 600; display: block; margin-bottom: 6px; }
+  .row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .col { flex: 1; }
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .swap-btn {
+    display: block;
+    margin: -4px auto 16px;
+    background: none;
+    border: none;
+    color: #4f46e5;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.convert {
+    width: 100%;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.convert:hover { background: #4338ca; }
+  .result {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f3f4f6;
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+  }
+  .result.show { display: block; }
+  .result .amount { font-size: 24px; font-weight: 700; color: #111827; }
+  .result .rate { font-size: 12px; color: #6b7280; margin-top: 6px; }
+  .error { color: #dc2626; font-size: 13px; margin-top: 12px; display: none; }
+  .error.show { display: block; }
+  footer { margin-top: 20px; text-align: center; font-size: 11px; color: #9ca3af; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Currency Converter</h1>
+    <p class="sub">Mini Project — Java (Spring Boot) backend, live exchange rates</p>
+
+    <label for="amount">Amount</label>
+    <input id="amount" type="number" value="100" min="0" step="any" style="margin-bottom:16px;">
+
+    <div class="row">
+      <div class="col">
+        <label for="from">From</label>
+        <select id="from"></select>
+      </div>
+      <div class="col">
+        <label for="to">To</label>
+        <select id="to"></select>
+      </div>
+    </div>
+
+    <button class="swap-btn" onclick="swap()">&#8646; swap currencies</button>
+
+    <button class="convert" onclick="convert()">Convert</button>
+
+    <div class="result" id="result">
+      <div class="amount" id="resultAmount"></div>
+      <div class="rate" id="resultRate"></div>
+    </div>
+    <div class="error" id="error"></div>
+
+    <footer>Backend: Spring Boot &middot; Data: open.er-api.com</footer>
+  </div>
+
+<script>
+async function loadCurrencies() {
+  const res = await fetch('/api/currencies');
+  const currencies = await res.json();
+  const fromSel = document.getElementById('from');
+  const toSel = document.getElementById('to');
+  currencies.forEach(c => {
+    fromSel.appendChild(new Option(c, c));
+    toSel.appendChild(new Option(c, c));
+  });
+  fromSel.value = 'USD';
+  toSel.value = 'INR';
+}
+
+function swap() {
+  const fromSel = document.getElementById('from');
+  const toSel = document.getElementById('to');
+  const tmp = fromSel.value;
+  fromSel.value = toSel.value;
+  toSel.value = tmp;
+}
+
+async function convert() {
+  const amount = document.getElementById('amount').value;
+  const from = document.getElementById('from').value;
+  const to = document.getElementById('to').value;
+  const resultBox = document.getElementById('result');
+  const errorBox = document.getElementById('error');
+  resultBox.classList.remove('show');
+  errorBox.classList.remove('show');
+
+  try {
+    const res = await fetch(`/api/convert?from=${from}&to=${to}&amount=${amount}`);
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Conversion failed');
+    }
+    const data = await res.json();
+    document.getElementById('resultAmount').textContent =
+      `${data.amount} ${data.from} = ${data.convertedAmount} ${data.to}`;
+    document.getElementById('resultRate').textContent =
+      `1 ${data.from} = ${data.rate} ${data.to}`;
+    resultBox.classList.add('show');
+  } catch (e) {
+    errorBox.textContent = e.message;
+    errorBox.classList.add('show');
+  }
+}
+
+loadCurrencies();
+</script>
+</body>
+</html>
